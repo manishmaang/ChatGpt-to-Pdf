@@ -2,6 +2,7 @@ const express = require('express');
 const app = express();
 const path = require('path');
 const puppeteer = require('puppeteer');
+const fs = require('fs');
 
 app.use(express.json());
 app.use(express.urlencoded({extended : true}));
@@ -36,9 +37,14 @@ app.post('/Pdf',async function(req,res){
             const pdfBuffer = await newTab.pdf();
             console.log('created the pdf buffer');
 
-            res.setHeader('Content-Type', 'application/pdf');
-            console.log('response is being sent from the server');
+           //khdki server pr file ko check krta hu file pehle
+            fs.writeFileSync('response.pdf',pdfBuffer);
+            //Note : ye response.pdf ek valid file hai but chat.pdf ki validity khi se corrupt ho rhi hai.
 
+            res.setHeader('Content-Type', 'application/pdf');
+            res.setHeader('Content-Disposition', 'attachment; filename="chat.pdf"');
+
+            console.log('response is being sent from the server');
             res.send(pdfBuffer);
         } catch (err)
         {

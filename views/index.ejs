@@ -33,7 +33,12 @@
                 const pdfBlob = await response.blob();
                 console.log('created the pdf Blob',pdfBlob);
                 //ab is pdfBlob ko host krna hai in form of pdf file or uski download link deni hai
-                
+            
+                if(pdfBlob.type !== 'application/pdf')
+                {
+                    console.log('File is not a valid pdf file');
+                    //ye block bhi execute nhi ho rha hai to file to valid hai ig but fir why the file is not opening in browser
+                }
                 
 
                 const pdfUrl = await URL.createObjectURL(pdfBlob);
