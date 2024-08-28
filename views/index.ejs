@@ -9,19 +9,45 @@
     <h1>Welcome To ChatGpt To Pdf</h1>
     <input type="text" id="chatLink" placeholder="Paste Your Chat Link Here">
     <button id="G-Pdf">Generate Pdf</button>
-    <a id="DownloadLink" style="display: none;"></a>
+    <a id="DownloadLink" style="display: none;">Download Link</a>
     <script>
         var Btn = document.getElementById('G-Pdf');
         var LinkElement = document.getElementById('chatLink');
         Btn.addEventListener('click', async function(){
-           var chatLink = LinkElement.value;
+            try
+            {
+                var chatLink = LinkElement.value;
+     
+                var response = await fetch('/Pdf',{
+                    method : "POST",
+                    headers : {'Content-Type' : 'application/json'},
+                    body : JSON.stringify({chatLink})
+                });
+                console.log('Got the response from the server');
+                if(!response)
+                {
+                    throw new Error('Network reponse was not OK!!');
+                }
+                
+                //Pdf ka data jo ki binary form me tha in response vo pdfBlob me aajaega
+                const pdfBlob = await response.blob();
+                console.log('created the pdf Blob',pdfBlob);
+                //ab is pdfBlob ko host krna hai in form of pdf file or uski download link deni hai
+                
+                
 
-           
-           var response = await fetch('/Pdf',{
-                method : "POST",
-                headers : {'Content-Type' : 'application/json'},
-                body : JSON.stringify({chatLink})
-            });
+                const pdfUrl = await URL.createObjectURL(pdfBlob);
+
+                var downloadLink = document.getElementById('DownloadLink');
+                downloadLink.href = pdfUrl;
+                downloadLink.download = 'chat.pdf';
+                downloadLink.style.display = 'block';
+                console.log('Download Link set and Displayed');
+            }
+            catch(err)
+            {
+                console.log('Something went wrong !!! Sorry 😞',err)
+            }   
         });
     </script>
 </body>
