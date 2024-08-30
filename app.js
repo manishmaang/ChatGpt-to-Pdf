@@ -13,6 +13,49 @@ app.get('/',function(req,res){
     res.status(200).render('index');
 })
 
+async function autoscroll(newTab) {
+    let iteration = 0;
+    let maxIteration = 20; // Increased iteration count
+    let previousHeight = await newTab.evaluate(function() {
+        return document.body.scrollHeight;
+    });
+
+    while (iteration <= maxIteration) {
+        await newTab.evaluate(function() {
+            window.scrollTo(0, document.body.scrollHeight);
+        });
+
+        try {
+            await newTab.waitForFunction(
+                function(previousHeight) {
+                    return document.body.scrollHeight > previousHeight;
+                },
+                {},
+                previousHeight,
+                { timeout: 120000 } // Increased timeout
+            );
+        } catch (error) {
+            console.error('waitForFunction failed:', error);
+            break; // Exit the loop if there's an error
+        }
+
+        await new Promise(function(resolve) {
+            setTimeout(resolve, 2000); // Increased delay
+        });
+
+        const currentHeight = await newTab.evaluate(function() {
+            return document.body.scrollHeight;
+        });
+
+        console.log(`Iteration ${iteration}: previousHeight = ${previousHeight}, currentHeight = ${currentHeight}`);
+
+        if (currentHeight === previousHeight) break;
+        previousHeight = currentHeight;
+        iteration++;
+    }
+}
+
+
 app.post('/Pdf',async function(req,res){
     var {chatLink} = req.body;
     console.log(chatLink);
@@ -34,11 +77,23 @@ app.post('/Pdf',async function(req,res){
             await newTab.goto(chatLink, {waitUntil : 'networkidle2', timeout : 60000});
             console.log('Went to the chatLink');
             
-            const pdfBuffer = await newTab.pdf();
+            await autoscroll(newTab);
+
+            //by default single page pdf hi generate hogi to handle it hume page size dena hoga and any other info to handle it
+            const pdfBuffer = await newTab.pdf({
+             format : 'A4',
+             printBackground : true,
+             margin : {
+                top: '10mm',
+                bottom: '10mm',
+                left: '10mm',
+                right: '10mm'
+             }
+            });
             console.log('created the pdf buffer');
 
            //khdki server pr file ko check krta hu file pehle
-            fs.writeFileSync('response.pdf',pdfBuffer);
+            fs.writeFileSync('output.pdf',pdfBuffer);
             //Note : ye response.pdf ek valid file hai but chat.pdf ki validity khi se corrupt ho rhi hai.
 
             res.setHeader('Content-Type', 'application/pdf');
@@ -50,7 +105,6 @@ app.post('/Pdf',async function(req,res){
         {
             console.log('Something Went Wrong',err);
         }
-
     }
 })
 
